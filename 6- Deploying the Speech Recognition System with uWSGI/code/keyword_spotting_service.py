@@ -84,8 +84,6 @@ def Keyword_Spotting_Service():
     return _Keyword_Spotting_Service._instance
 
 
-
-
 if __name__ == "__main__":
 
     # create 2 instances of the keyword spotting service
@@ -96,5 +94,5 @@ if __name__ == "__main__":
     assert kss is kss1
 
     # make a prediction
-    keyword = kss.predict("test/down.wav")
+    keyword = kss.predict("down.wav")
     print(keyword)
