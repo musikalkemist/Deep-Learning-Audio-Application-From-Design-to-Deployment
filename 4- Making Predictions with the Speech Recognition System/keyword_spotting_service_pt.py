@@ -71,7 +71,7 @@ class _Keyword_Spotting_Service:
         return predictions
 
 
-def create_keyword_spotting_service():
+def Keyword_Spotting_Service():
     r"""Factory function for Keyword_Spotting_Service class.
 
         Returns:
