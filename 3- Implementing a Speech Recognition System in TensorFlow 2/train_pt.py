@@ -121,7 +121,7 @@ def predict(
     return np.array(test_preds)
 
 
-def prepare_pt_dataloader(X: np.ndarray, y: np.ndarray, batch_size: int = 32, shuffle: bool = False):
+def prepare_dataloader(X: np.ndarray, y: np.ndarray, batch_size: int = 32, shuffle: bool = False):
     # torch wants the input in NCHW (instead of NHWC format)
     dataset = torch.utils.data.TensorDataset(
         torch.tensor(X, dtype=torch.float32).permute(0, 3, 1, 2), torch.tensor(y, dtype=torch.int64))
@@ -236,8 +236,8 @@ def train_pt_model(
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    train_dataloader = prepare_pt_dataloader(X_train, y_train, batch_size=batch_size, shuffle=True)
-    val_dataloader = prepare_pt_dataloader(X_val, y_val, batch_size=batch_size, shuffle=False)
+    train_dataloader = prepare_dataloader(X_train, y_train, batch_size=batch_size, shuffle=True)
+    val_dataloader = prepare_dataloader(X_val, y_val, batch_size=batch_size, shuffle=False)
 
     early_stopper = EarlyStopper(monitor='val_acc', min_delta=0.001, patience=patience)
 
@@ -306,7 +306,7 @@ def eval_pt_model(
         mapping=None,
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ):
-    test_dataloader = prepare_pt_dataloader(X_test, y_test, batch_size=32, shuffle=False)
+    test_dataloader = prepare_dataloader(X_test, y_test, batch_size=32, shuffle=False)
 
     # get accumulated statistics
     test_loss = get_loss(model, loss_fn, test_dataloader, device=device)
