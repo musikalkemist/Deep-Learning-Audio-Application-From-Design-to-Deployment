@@ -3,8 +3,8 @@ import numpy as np
 import os
 import torch
 
-SAVED_MODEL_PATH = 'model.pt'
 NUM_SAMPLES_TO_CONSIDER = 22050  # 1 sec. of audio
+SAVED_MODEL_PATH = 'model.pt'
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -13,16 +13,16 @@ class _Keyword_Spotting_Service:
     """Singleton class for keyword spotting inference with trained models."""
     model = None
     _mapping = [
-        'down',
-        'off',
-        'on',
-        'no',
-        'yes',
-        'stop',
-        'up',
-        'right',
-        'left',
-        'go'
+        "down",
+        "off",
+        "on",
+        "no",
+        "yes",
+        "stop",
+        "up",
+        "right",
+        "left",
+        "go"
     ]
     _instance = None
 
@@ -63,7 +63,7 @@ class _Keyword_Spotting_Service:
                 Keyword predicted by the model.
         """
         MFCCs = _Keyword_Spotting_Service.preprocess(filepath)  # extract MFCC
-        MFCCs = MFCCs[np.newaxis, np.newaxis, ...]  # in pytorch, model expects input in NCHW format (instead of NHWC format)
+        MFCCs = MFCCs[np.newaxis, np.newaxis, ...]  # in PyTorch, model expects input in NCHW format (instead of NHWC format)
         MFCCs_pt = torch.from_numpy(MFCCs).to(dtype=torch.float32)
         prediction_logits = self.model(MFCCs_pt)
         predictions_pt = torch.argmax(prediction_logits, 1)
@@ -81,6 +81,7 @@ def Keyword_Spotting_Service():
     # ensure an instance is created only the first time the factory function is called
     if _Keyword_Spotting_Service._instance is None:
         _Keyword_Spotting_Service._instance = _Keyword_Spotting_Service()
+        print('Loading the PyTorch model for only the first time.')
         _Keyword_Spotting_Service.model = torch.jit.load(SAVED_MODEL_PATH)
         _Keyword_Spotting_Service.model.eval()
     return _Keyword_Spotting_Service._instance
@@ -88,15 +89,12 @@ def Keyword_Spotting_Service():
 
 if __name__ == '__main__':
     # create 2 instances of the keyword spotting service
-    kss = create_keyword_spotting_service()
-    kss1 = create_keyword_spotting_service()
+    kss = Keyword_Spotting_Service()
+    kss1 = Keyword_Spotting_Service()
 
     # check that different instances of the keyword spotting service point back to the same object (singleton)
     assert kss is kss1
 
     # make a prediction
-    keyword = kss.predict('test/down.wav')
-    print(keyword)
-
-    keyword = kss.predict('test/left.wav')
+    keyword = kss.predict('down.wav)
     print(keyword)
