@@ -1,195 +1,184 @@
 import json
+
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
 
-DATA_PATH = "data.json"
-SAVED_MODEL_PATH = "../flask/model.h5"
+DATA_PATH = 'data.json'
+SAVED_MODEL_PATH = 'model.h5'
 EPOCHS = 40
 BATCH_SIZE = 32
-PATIENCE = 5
 LEARNING_RATE = 0.0001
+PATIENCE = 5
+NUM_KEYWORDS = 10
 
 
-def load_data(data_path):
-    """Loads training dataset from json file.
+def get_data_splits(data_path: str, test_size: float = 0.05, val_size: float = 0.1):
+    # read data from .json file
+    with open(data_path, 'rb') as f:
+        data = json.load(f)
+    X, y, files = np.array(data['MFCCs']), np.array(data['labels']), np.array(data['files'])
 
-    :param data_path (str): Path to json file containing data
-    :return X (ndarray): Inputs
-    :return y (ndarray): Targets
+    # create train/validation/test splits
+    X_train, X_test, y_train, y_test, files_train, files_test = train_test_split(
+        X, y, files, test_size=test_size, random_state=23)
+    X_train, X_val, y_train, y_val, files_train, files_val = train_test_split(
+        X_train, y_train, files_train, test_size=val_size, random_state=23)
 
-    """
-    with open(data_path, "r") as fp:
-        data = json.load(fp)
-
-    X = np.array(data["MFCCs"])
-    y = np.array(data["labels"])
-    print("Training sets loaded!")
-    return X, y
-
-
-def prepare_dataset(data_path, test_size=0.2, validation_size=0.2):
-    """Creates train, validation and test sets.
-
-    :param data_path (str): Path to json file containing data
-    :param test_size (flaot): Percentage of dataset used for testing
-    :param validation_size (float): Percentage of train set used for cross-validation
-
-    :return X_train (ndarray): Inputs for the train set
-    :return y_train (ndarray): Targets for the train set
-    :return X_validation (ndarray): Inputs for the validation set
-    :return y_validation (ndarray): Targets for the validation set
-    :return X_test (ndarray): Inputs for the test set
-    :return X_test (ndarray): Targets for the test set
-    """
-
-    # load dataset
-    X, y = load_data(data_path)
-
-    # create train, validation, test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
-    X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=validation_size)
-
-    # add an axis to nd array
+    # convert inputs from 2D to 3D arrays (number of segments, 13) -> (number of segments, 13, 1)
     X_train = X_train[..., np.newaxis]
+    X_val = X_val[..., np.newaxis]
     X_test = X_test[..., np.newaxis]
-    X_validation = X_validation[..., np.newaxis]
 
-    return X_train, y_train, X_validation, y_validation, X_test, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test, files_train, files_val, files_test
 
 
-def build_model(input_shape, loss="sparse_categorical_crossentropy", learning_rate=0.0001):
-    """Build neural network using keras.
+def plot_history(history):
+    r"""Plots accuracy/loss for training/validation set as a function of the epochs.
 
-    :param input_shape (tuple): Shape of array representing a sample train. E.g.: (44, 13, 1)
-    :param loss (str): Loss function to use
-    :param learning_rate (float):
+    Args:
+        history:
+            Training history of the model.
 
-    :return model: TensorFlow model
+    Returns:
+        : matplotlib figure
     """
+    fig, axs = plt.subplots(2)
 
-    # build network architecture using convolutional layers
-    model = tf.keras.models.Sequential()
+    # create accuracy subplot
+    axs[0].plot(history['acc'] if isinstance(history, dict) else history.history['acc'], label='acc')
+    axs[0].plot(history['val_acc'] if isinstance(history, dict) else history.history['val_acc'], label='val_acc')
+    axs[0].set_ylabel('Accuracy')
+    axs[0].legend(loc='lower right')
+    axs[0].set_title('Accuracy evaluation')
 
-    # 1st conv layer
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu', input_shape=input_shape,
-                                     kernel_regularizer=tf.keras.regularizers.l2(0.001)))
-    model.add(tf.keras.layers.BatchNormalization())
-    model.add(tf.keras.layers.MaxPooling2D((3, 3), strides=(2,2), padding='same'))
+    # create loss subplot
+    axs[1].plot(history['loss'] if isinstance(history, dict) else history.history['loss'], label='loss')
+    axs[1].plot(history['val_loss'] if isinstance(history, dict) else history.history['val_loss'], label='val_loss')
+    axs[1].set_xlabel('Epoch')
+    axs[1].set_ylabel('Loss')
+    axs[1].legend(loc='upper right')
+    axs[1].set_title('Loss evaluation')
+    plt.show()
 
-    # 2nd conv layer
-    model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu',
-                                     kernel_regularizer=tf.keras.regularizers.l2(0.001)))
-    model.add(tf.keras.layers.BatchNormalization())
-    model.add(tf.keras.layers.MaxPooling2D((3, 3), strides=(2,2), padding='same'))
 
-    # 3rd conv layer
-    model.add(tf.keras.layers.Conv2D(32, (2, 2), activation='relu',
-                                     kernel_regularizer=tf.keras.regularizers.l2(0.001)))
-    model.add(tf.keras.layers.BatchNormalization())
-    model.add(tf.keras.layers.MaxPooling2D((2, 2), strides=(2,2), padding='same'))
+########################################################################
+# 1. TensorFlow implementation functions
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+def build_tf_model(input_shape):
+    inputs = tf.keras.layers.Input(shape=input_shape, name='MFCC')
 
-    # flatten output and feed into dense layer
-    model.add(tf.keras.layers.Flatten())
-    model.add(tf.keras.layers.Dense(64, activation='relu'))
-    tf.keras.layers.Dropout(0.3)
+    # conv layer 1
+    x = tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu',
+                               kernel_regularizer=tf.keras.regularizers.l2(0.001))(inputs)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.MaxPool2D((3, 3), strides=(2, 2), padding='same')(x)
 
-    # softmax output layer
-    model.add(tf.keras.layers.Dense(10, activation='softmax'))
+    # conv layer 2
+    x = tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.MaxPool2D((3, 3), strides=(2, 2), padding='same')(x)
 
-    optimiser = tf.optimizers.Adam(learning_rate=learning_rate)
+    # conv layer 3
+    x = tf.keras.layers.Conv2D(32, kernel_size=(2, 2), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001))(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2), padding='same')(x)
 
-    # compile model
-    model.compile(optimizer=optimiser,
-                  loss=loss,
-                  metrics=["accuracy"])
+    # flatten output
+    x = tf.keras.layers.Flatten()(x)
 
-    # print model parameters on console
-    model.summary()
+    # dense layer
+    x = tf.keras.layers.Dense(64, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+
+    # last layer
+    outputs = tf.keras.layers.Dense(NUM_KEYWORDS)(x)
+
+    model = tf.keras.Model(inputs, outputs, name='cnn')
+
+    # print model overview
+    print(model.summary())
 
     return model
 
 
-def train(model, epochs, batch_size, patience, X_train, y_train, X_validation, y_validation):
-    """Trains model
+def train_tf_model(
+        model: tf.keras.Model,
+        X_train,
+        y_train,
+        X_val=None,
+        y_val=None,
+        epochs: int = 40,
+        patience: int = 5,
+        batch_size: int = 32,
+        learning_rate: float = 0.001
+):
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-    :param epochs (int): Num training epochs
-    :param batch_size (int): Samples per batch
-    :param patience (int): Num epochs to wait before early stop, if there isn't an improvement on accuracy
-    :param X_train (ndarray): Inputs for the train set
-    :param y_train (ndarray): Targets for the train set
-    :param X_validation (ndarray): Inputs for the validation set
-    :param y_validation (ndarray): Targets for the validation set
+    # compile the model
+    model.compile(optimizer=optimizer, loss=loss_fn, metrics=['acc'])
 
-    :return history: Training history
-    """
+    early_stop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_acc', min_delta=0.001, patience=patience)
 
-    earlystop_callback = tf.keras.callbacks.EarlyStopping(monitor="accuracy", min_delta=0.001, patience=patience)
+    # train the model
+    history = model.fit(
+        X_train, y_train,
+        epochs=epochs,
+        batch_size=batch_size,
+        validation_data=(X_val, y_val),
+        callbacks=[early_stop_callback]
+    )
 
-    # train model
-    history = model.fit(X_train,
-                        y_train,
-                        epochs=epochs,
-                        batch_size=batch_size,
-                        validation_data=(X_validation, y_validation),
-                        callbacks=[earlystop_callback])
-    return history
+    return model, history
 
 
-def plot_history(history):
-    """Plots accuracy/loss for training/validation set as a function of the epochs
+def eval_tf_model(model: tf.keras.Model, X_test, y_test, files_test, mapping=None):
+    # get accumulated statistics
+    test_loss, test_acc = model.evaluate(X_test, y_test)  # evaluate model on test data
+    print(f'\ntest_loss: {test_loss:.4f}, test_acc: {test_acc:.4f}\n')
 
-    :param history: Training history of model
-    :return:
-    """
-
-    fig, axs = plt.subplots(2)
-
-    # create accuracy subplot
-    axs[0].plot(history.history["accuracy"], label="accuracy")
-    axs[0].plot(history.history['val_accuracy'], label="val_accuracy")
-    axs[0].set_ylabel("Accuracy")
-    axs[0].legend(loc="lower right")
-    axs[0].set_title("Accuracy evaluation")
-
-    # create loss subplot
-    axs[1].plot(history.history["loss"], label="loss")
-    axs[1].plot(history.history['val_loss'], label="val_loss")
-    axs[1].set_xlabel("Epoch")
-    axs[1].set_ylabel("Loss")
-    axs[1].legend(loc="upper right")
-    axs[1].set_title("Loss evaluation")
-
-    plt.show()
+    # see specific examples
+    y_test_pred = tf.argmax(model.predict(X_test), 1).numpy()
+    for file, y, yhat in zip(files_test, y_test, y_test_pred):
+        if y == yhat:
+            print(f'{file}: true: {y if mapping is None else mapping[y]}, '
+                  f'pred: {yhat if mapping is None else mapping[yhat]}')
+        else:
+            print(f'    WRONG!!! {file}: true: {y if mapping is None else mapping[y]}, '
+                  f'pred: {yhat if mapping is None else mapping[yhat]}')
 
 
 def main():
-    # generate train, validation and test sets
-    X_train, y_train, X_validation, y_validation, X_test, y_test = prepare_dataset(DATA_PATH)
+    with open(DATA_PATH, 'rb') as f:
+        data = json.load(f)
+    mapping = data['mapping']
 
-    # create network
-    input_shape = (X_train.shape[1], X_train.shape[2], 1)
-    model = build_model(input_shape, learning_rate=LEARNING_RATE)
+    X_train, X_val, X_test, y_train, y_val, y_test, files_train, files_val, files_test = get_data_splits(DATA_PATH)
 
-    # train network
-    history = train(model, EPOCHS, BATCH_SIZE, PATIENCE, X_train, y_train, X_validation, y_validation)
+    # build the model
+    tf_model = build_tf_model(X_train.shape[1:])
 
-    # plot accuracy/loss for training/validation set as a function of the epochs
-    plot_history(history)
+    # train the model
+    tf_model, tf_history = train_tf_model(
+        tf_model, X_train, y_train, X_val=X_val, y_val=y_val,
+        epochs=EPOCHS, batch_size=BATCH_SIZE, learning_rate=LEARNING_RATE
+    )
 
-    # evaluate network on test set
-    test_loss, test_acc = model.evaluate(X_test, y_test)
-    print("\nTest loss: {}, test accuracy: {}".format(test_loss, 100*test_acc))
+    # plot history
+    plot_history(tf_history)
 
-    # save model
-    model.save(SAVED_MODEL_PATH)
+    # evaluate the model on test data
+    eval_tf_model(tf_model, X_test, y_test, files_test, mapping=mapping)
+
+    # save the model
+    tf_model.save(SAVED_MODEL_PATH)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
-
-
 
 
 
