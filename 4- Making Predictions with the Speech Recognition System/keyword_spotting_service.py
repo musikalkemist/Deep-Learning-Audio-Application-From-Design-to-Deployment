@@ -5,12 +5,9 @@ import numpy as np
 SAVED_MODEL_PATH = "model.h5"
 SAMPLES_TO_CONSIDER = 22050
 
+
 class _Keyword_Spotting_Service:
-    """Singleton class for keyword spotting inference with trained models.
-
-    :param model: Trained model
-    """
-
+    """Singleton class for keyword spotting inference with trained models."""
     model = None
     _mapping = [
         "down",
@@ -26,68 +23,65 @@ class _Keyword_Spotting_Service:
     ]
     _instance = None
 
+    @staticmethod
+    def preprocess(filepath, num_mfcc: int = 13, n_fft: int = 2048, hop_length: int = 512):
+        r"""Extract MFCCs from audio file.
 
-    def predict(self, file_path):
+        Args:
+            filepath: `str`
+                Path of audio file.
+            num_mfcc: `int`, default=13
+                Number of MFCC coefficients.
+            n_fft: `int`, default=2048
+                Length of the FFT window. Measured in # of samples.
+            hop_length: `int`, default=512
+                Sliding window for FFT. Number of samples between successive frames.
+
+        Returns:
+            MFCCs: `np.ndarray`
+                2-dim array with MFCC data of shape (# time steps, # coefficients).
         """
-
-        :param file_path (str): Path to audio file to predict
-        :return predicted_keyword (str): Keyword predicted by the model
-        """
-
-        # extract MFCC
-        MFCCs = self.preprocess(file_path)
-
-        # we need a 4-dim array to feed to the model for prediction: (# samples, # time steps, # coefficients, 1)
-        MFCCs = MFCCs[np.newaxis, ..., np.newaxis]
-
-        # get the predicted label
-        predictions = self.model.predict(MFCCs)
-        predicted_index = np.argmax(predictions)
-        predicted_keyword = self._mapping[predicted_index]
-        return predicted_keyword
-
-
-    def preprocess(self, file_path, num_mfcc=13, n_fft=2048, hop_length=512):
-        """Extract MFCCs from audio file.
-
-        :param file_path (str): Path of audio file
-        :param num_mfcc (int): # of coefficients to extract
-        :param n_fft (int): Interval we consider to apply STFT. Measured in # of samples
-        :param hop_length (int): Sliding window for STFT. Measured in # of samples
-
-        :return MFCCs (ndarray): 2-dim array with MFCC data of shape (# time steps, # coefficients)
-        """
-
-        # load audio file
-        signal, sample_rate = librosa.load(file_path)
-
-        if len(signal) >= SAMPLES_TO_CONSIDER:
-            # ensure consistency of the length of the signal
-            signal = signal[:SAMPLES_TO_CONSIDER]
-
-            # extract MFCCs
-            MFCCs = librosa.feature.mfcc(signal, sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
-                                         hop_length=hop_length)
+        signal, sample_rate = librosa.load(filepath)  # load audio file
+        if len(signal) >= NUM_SAMPLES_TO_CONSIDER:
+            signal = signal[:NUM_SAMPLES_TO_CONSIDER]  # enforce 1 sec long signals
+        # extract MFCCs
+        MFCCs = librosa.feature.mfcc(y=signal, sr=sample_rate, n_mfcc=num_mfcc, n_fft=n_fft, hop_length=hop_length)
         return MFCCs.T
+
+    def predict(self, filepath: str):
+        r"""Predict the keyword of the `filepath`.
+
+        Args:
+            filepath: `str`
+                Path to audio file to predict.
+
+        Returns:
+            predicted_keyword: `np.ndarray`
+                Keyword predicted by the model.
+        """
+        MFCCs = _Keyword_Spotting_Service.preprocess(filepath)  # extract MFCC
+        MFCCs = MFCCs[np.newaxis, ..., np.newaxis]
+        prediction_logits = self.model.predict(MFCCs)
+        predictions = np.array(self._mapping)[np.argmax(prediction_logits, 1)]
+        return predictions[0]
 
 
 def Keyword_Spotting_Service():
-    """Factory function for Keyword_Spotting_Service class.
+    r"""Factory function for Keyword_Spotting_Service class.
 
-    :return _Keyword_Spotting_Service._instance (_Keyword_Spotting_Service):
+        Returns:
+        : _Keyword_Spotting_Service._instance (_Keyword_Spotting_Service)
+
     """
-
     # ensure an instance is created only the first time the factory function is called
     if _Keyword_Spotting_Service._instance is None:
         _Keyword_Spotting_Service._instance = _Keyword_Spotting_Service()
+        print('Loading the TensorFlow model for only the first time.')
         _Keyword_Spotting_Service.model = tf.keras.models.load_model(SAVED_MODEL_PATH)
     return _Keyword_Spotting_Service._instance
 
 
-
-
-if __name__ == "__main__":
-
+if __name__ == '__main__:
     # create 2 instances of the keyword spotting service
     kss = Keyword_Spotting_Service()
     kss1 = Keyword_Spotting_Service()
@@ -96,5 +90,5 @@ if __name__ == "__main__":
     assert kss is kss1
 
     # make a prediction
-    keyword = kss.predict("test/down.wav")
+    keyword = kss.predict("down.wav")
     print(keyword)
