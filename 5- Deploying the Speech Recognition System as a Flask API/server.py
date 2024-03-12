@@ -2,6 +2,7 @@ import random
 import os
 from flask import Flask, request, jsonify
 from keyword_spotting_service import Keyword_Spotting_Service
+from keyword_spotting_service_pt import Keyword_Spotting_Service as Keyword_Spotting_Service_pt
 
 
 # instantiate flask app
@@ -25,6 +26,7 @@ def predict():
 
 	# instantiate keyword spotting service singleton and get prediction
 	kss = Keyword_Spotting_Service()
+	# kss = Keyword_Spotting_Service_pt()  # uncomment this if you want to run predictions with the PyTorch model
 	predicted_keyword = kss.predict(file_name)
 
 	# we don't need the audio file any more - let's delete it!

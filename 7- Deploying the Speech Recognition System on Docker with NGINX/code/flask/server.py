@@ -1,44 +1,45 @@
-import random
 import os
+import random
+
 from flask import Flask, request, jsonify
 from keyword_spotting_service import Keyword_Spotting_Service
+from keyword_spotting_service_pt import Keyword_Spotting_Service as Keyword_Spotting_Service_pt
 
 app = Flask(__name__)
 
-@app.route("/predict", methods=["POST"])
+
+@app.route('/predict', methods=['POST'])
 def predict():
+    r"""Endpoint to predict keyword.
 
-    # get audio file and save it
-    audio_file = request.files["file"]
-    file_name = str(random.randint(0, 100000))
-    audio_file.save(file_name)
+    Returns:
+        json file with the following format:
+        {
+            'keyword': KEYWORD_VALUE
+        }
+    """
+    # get file from POST request and save it
+    audio_file = request.files['file']
+    filename = str(random.randint(0, 100000))
+    audio_file.save(filename)
 
-    # invoke keyword spotting service
-    kss = Keyword_Spotting_Service()
+    # instantiate keyword spotting service singleton and get prediction
+    if request.form['model_type'] == 'tensorflow':
+        kss = Keyword_Spotting_Service()
+    elif request.form['model_type'] == 'pytorch':
+        kss = Keyword_Spotting_Service_pt()
+    else:
+        raise ValueError('The only two supported model types are: tensorflow, pytorch')
+    predicted_keyword = kss.predict(filename)
 
-    # make a prediction
-    predicted_keyword = kss.predict(file_name)
+    # we don't need the audio file anymore - let's delete it!
+    os.remove(filename)
 
-    # remove the audio file
-    os.remove(file_name)
+    # send back result as a json file
+    result = {'keyword': predicted_keyword}
 
-    # send back the predicted keyword in json format
-    data = {"keyword": predicted_keyword}
-    return jsonify(data)
+    return jsonify(result)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=False)
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,9 +1,12 @@
 import librosa
-import tensorflow as tf
 import numpy as np
+import os
+import torch
 
-SAVED_MODEL_PATH = "model.h5"
-SAMPLES_TO_CONSIDER = 22050
+NUM_SAMPLES_TO_CONSIDER = 22050  # 1 sec. of audio
+SAVED_MODEL_PATH = 'model.pt'
+
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 class _Keyword_Spotting_Service:
@@ -60,10 +63,12 @@ class _Keyword_Spotting_Service:
                 Keyword predicted by the model.
         """
         MFCCs = _Keyword_Spotting_Service.preprocess(filepath)  # extract MFCC
-        MFCCs = MFCCs[np.newaxis, ..., np.newaxis]
-        prediction_logits = self.model.predict(MFCCs)
-        predictions = np.array(self._mapping)[np.argmax(prediction_logits, 1)]
-        return predictions[0]
+        MFCCs = MFCCs[np.newaxis, np.newaxis, ...]  # in PyTorch, model expects input in NCHW format (instead of NHWC format)
+        MFCCs_pt = torch.from_numpy(MFCCs).to(dtype=torch.float32)
+        prediction_logits = self.model(MFCCs_pt)
+        predictions_pt = torch.argmax(prediction_logits, 1)
+        predictions = np.array(self._mapping)[predictions_pt]
+        return predictions
 
 
 def Keyword_Spotting_Service():
@@ -76,13 +81,13 @@ def Keyword_Spotting_Service():
     # ensure an instance is created only the first time the factory function is called
     if _Keyword_Spotting_Service._instance is None:
         _Keyword_Spotting_Service._instance = _Keyword_Spotting_Service()
-        print('Loading the TensorFlow model for only the first time.')
-        _Keyword_Spotting_Service.model = tf.keras.models.load_model(SAVED_MODEL_PATH)
+        print('Loading the PyTorch model for only the first time.')
+        _Keyword_Spotting_Service.model = torch.jit.load(SAVED_MODEL_PATH)
+        _Keyword_Spotting_Service.model.eval()
     return _Keyword_Spotting_Service._instance
 
 
-if __name__ == "__main__":
-
+if __name__ == '__main__':
     # create 2 instances of the keyword spotting service
     kss = Keyword_Spotting_Service()
     kss1 = Keyword_Spotting_Service()
@@ -91,5 +96,5 @@ if __name__ == "__main__":
     assert kss is kss1
 
     # make a prediction
-    keyword = kss.predict("down.wav")
+    keyword = kss.predict('down.wav)
     print(keyword)
