@@ -69,8 +69,8 @@ class _Keyword_Spotting_Service:
             signal = signal[:SAMPLES_TO_CONSIDER]
 
             # extract MFCCs
-            MFCCs = librosa.feature.mfcc(signal, sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
-                                         hop_length=hop_length)
+            MFCCs = librosa.feature.mfcc(y=signal, sr=sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
+                                        hop_length=hop_length)
         return MFCCs.T
 
 

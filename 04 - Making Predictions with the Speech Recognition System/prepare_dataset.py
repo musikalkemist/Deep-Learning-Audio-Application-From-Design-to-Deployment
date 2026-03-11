@@ -51,8 +51,8 @@ def preprocess_dataset(dataset_path, json_path, num_mfcc=13, n_fft=2048, hop_len
                     signal = signal[:SAMPLES_TO_CONSIDER]
 
                     # extract MFCCs
-                    MFCCs = librosa.feature.mfcc(signal, sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
-                                                 hop_length=hop_length)
+                    MFCCs = librosa.feature.mfcc(y=signal, sr=sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
+                                                hop_length=hop_length)
 
                     # store data for analysed track
                     data["MFCCs"].append(MFCCs.T.tolist())
