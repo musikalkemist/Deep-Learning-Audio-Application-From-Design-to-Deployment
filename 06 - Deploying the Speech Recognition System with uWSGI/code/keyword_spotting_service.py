@@ -1,3 +1,6 @@
+import os
+# Must be set before importing tensorflow
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import librosa
 import tensorflow as tf
 import numpy as np
@@ -80,7 +83,12 @@ def Keyword_Spotting_Service():
     # ensure an instance is created only the first time the factory function is called
     if _Keyword_Spotting_Service._instance is None:
         _Keyword_Spotting_Service._instance = _Keyword_Spotting_Service()
-        _Keyword_Spotting_Service.model = tf.keras.models.load_model(SAVED_MODEL_PATH)
+        # Explicitly setting compile=False often resolves deserialization 
+        # issues where the optimizer config has changed between Keras versions
+        _Keyword_Spotting_Service.model = tf.keras.models.load_model(
+            SAVED_MODEL_PATH, 
+            compile=False
+        )
     return _Keyword_Spotting_Service._instance
 
 
