@@ -39,26 +39,27 @@ def preprocess_dataset(dataset_path, json_path, num_mfcc=13, n_fft=2048, hop_len
 
             # process all audio files in sub-dir and store MFCCs
             for f in filenames:
-                file_path = os.path.join(dirpath, f)
+                if f.endswith(".wav"):
+                    file_path = os.path.join(dirpath, f)
 
-                # load audio file and slice it to ensure length consistency among different files
-                signal, sample_rate = librosa.load(file_path)
+                    # load audio file and slice it to ensure length consistency among different files
+                    signal, sample_rate = librosa.load(file_path)
 
-                # drop audio files with less than pre-decided number of samples
-                if len(signal) >= SAMPLES_TO_CONSIDER:
+                    # drop audio files with less than pre-decided number of samples
+                    if len(signal) >= SAMPLES_TO_CONSIDER:
 
-                    # ensure consistency of the length of the signal
-                    signal = signal[:SAMPLES_TO_CONSIDER]
+                        # ensure consistency of the length of the signal
+                        signal = signal[:SAMPLES_TO_CONSIDER]
 
-                    # extract MFCCs
-                    MFCCs = librosa.feature.mfcc(y=signal, sr=sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
-                                                hop_length=hop_length)
+                        # extract MFCCs
+                        MFCCs = librosa.feature.mfcc(y=signal, sr=sample_rate, n_mfcc=num_mfcc, n_fft=n_fft,
+                                                    hop_length=hop_length)
 
-                    # store data for analysed track
-                    data["MFCCs"].append(MFCCs.T.tolist())
-                    data["labels"].append(i-1)
-                    data["files"].append(file_path)
-                    print("{}: {}".format(file_path, i-1))
+                        # store data for analysed track
+                        data["MFCCs"].append(MFCCs.T.tolist())
+                        data["labels"].append(i-1)
+                        data["files"].append(file_path)
+                        print("{}: {}".format(file_path, i-1))
 
     # save data in json file
     with open(json_path, "w") as fp:
