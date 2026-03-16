@@ -12,6 +12,9 @@ Functionality:
    file metadata.
 4. Provides real-time CLI feedback using relative paths and an update counter.
 5. Protects the source file from self-overwriting via absolute path normalization.
+
+Usage: python propagate_file.py -f 'path/to/source_file'
+Action: Updates all files in the repository sharing the same filename as the source.
 """
 
 import os
