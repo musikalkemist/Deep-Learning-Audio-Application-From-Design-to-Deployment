@@ -147,7 +147,7 @@ Thumbs.db
 # Cython debug symbols
 cython_debug/
 
-# Dataset files
+# Dataset/Models files
 Speech_Commands_dataset/
 speech_commands_v2_extracted
 **/speech_commands_v2_extracted
@@ -155,3 +155,5 @@ speech_commands_v2_extracted
 /data
 *.gz
 *.json
+**/data.json
+*.h5
