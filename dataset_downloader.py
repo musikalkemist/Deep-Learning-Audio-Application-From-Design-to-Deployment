@@ -1,15 +1,16 @@
 """
 Speech Commands Dataset Setup Utility
-----------------------------------
-This script automates the acquisition and organization of the Google Speech Commands 
-dataset for the TSOAI (The Sound of AI) courses.
+---------------------------------------------------------
+
+This script automates the acquisition and organization of the Google Speech Commands dataset for the TSOAI (The Sound of AI) courses,
+optimized for specific subset extraction to save disk space and reduce processing overhead.
 
 Functionality:
-1. Downloads the full v0.02 dataset (35 classes) from Google's servers.
-2. Extracts the compressed archive into the local project structure.
-3. Sanitizes the dataset by removing hidden MacOS metadata artifacts
-   (._ files) to prevent processing errors in librosa.
-4. Performs automatic cleanup of temporary download files.
+1. Orchestrated Download: Utilizes TensorFlow's `get_file` to fetch the complete v0.02 archive (35 classes) if not present locally.
+2. Selective Extraction: Instead of a full unpack, it filters the tarball to extract only the user-defined TARGET_CLASSES (default: up, down, left, right).
+3. State-Based Execution: Employs a status-check mechanism (Status 0-2) to avoid redundant downloads or extractions based on the current filesystem state.
+4. Path Preservation: Maintains the original directory structure required by the TSOAI course pipelines.
+Note: This script preserves the compressed archive (.tar.gz) after extraction for verification.
 """
 
 import os
