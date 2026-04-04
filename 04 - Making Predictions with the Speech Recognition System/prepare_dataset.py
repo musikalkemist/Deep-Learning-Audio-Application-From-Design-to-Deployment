@@ -2,9 +2,10 @@ import librosa
 import os
 import json
 
-DATASET_PATH = "dataset"
-JSON_PATH = "data.json"
-SAMPLES_TO_CONSIDER = 22050
+DATASET_PATH = "Speech_Commands_dataset"
+CLASS_FOLDER = "04 - Making Predictions with the Speech Recognition System"
+JSON_PATH = f"{CLASS_FOLDER}/data.json"
+SAMPLES_TO_CONSIDER = 22050 # 1 sec. of audio
 
 
 def preprocess_dataset(dataset_path, json_path, num_mfcc=13, n_fft=2048, hop_length=512):
