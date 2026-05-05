@@ -1,11 +1,9 @@
 import os
-# Must be set before importing tensorflow
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import librosa
 import tensorflow as tf
 import numpy as np
 
-SAVED_MODEL_PATH = "model.h5"
+SAVED_MODEL_PATH = "model.keras" # Changed from "model.h5" to "model.keras" to reflect the new Keras format
 SAMPLES_TO_CONSIDER = 22050
 
 class _Keyword_Spotting_Service:
@@ -92,6 +90,8 @@ def Keyword_Spotting_Service():
     return _Keyword_Spotting_Service._instance
 
 
+
+
 if __name__ == "__main__":
 
     # create 2 instances of the keyword spotting service
@@ -102,5 +102,5 @@ if __name__ == "__main__":
     assert kss is kss1
 
     # make a prediction
-    keyword = kss.predict("down.wav")
+    keyword = kss.predict("test/down.wav")
     print(keyword)
