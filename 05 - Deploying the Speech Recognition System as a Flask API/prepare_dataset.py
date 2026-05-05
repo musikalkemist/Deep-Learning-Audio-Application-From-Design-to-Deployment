@@ -1,9 +1,10 @@
 import librosa
 import os
 import json
+from pathlib import Path
 
 DATASET_PATH = "Speech_Commands_dataset"
-CLASS_FOLDER = "04 - Making Predictions with the Speech Recognition System"
+CLASS_FOLDER = Path(__file__).parent.name # Dynamically determine the class folder based on the script's location
 JSON_PATH = f"{CLASS_FOLDER}/data.json"
 SAMPLES_TO_CONSIDER = 22050 # 1 sec. of audio
 
