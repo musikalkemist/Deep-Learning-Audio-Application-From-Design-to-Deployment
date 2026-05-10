@@ -1,11 +1,9 @@
 import os
-# Must be set before importing tensorflow
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import librosa
 import tensorflow as tf
 import numpy as np
 
-SAVED_MODEL_PATH = "model.h5"
+SAVED_MODEL_PATH = "model.keras" # Changed from "model.h5" to "model.keras" to reflect the new Keras format
 SAMPLES_TO_CONSIDER = 22050
 
 class _Keyword_Spotting_Service:
@@ -16,16 +14,10 @@ class _Keyword_Spotting_Service:
 
     model = None
     _mapping = [
-        "down",
-        "off",
-        "on",
-        "no",
-        "yes",
-        "stop",
-        "up",
         "right",
         "left",
-        "go"
+        "up",
+        "down"
     ]
     _instance = None
 

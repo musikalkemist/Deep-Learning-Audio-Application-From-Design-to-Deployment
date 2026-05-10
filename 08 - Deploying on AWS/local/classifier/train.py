@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 DATA_PATH = "data.json"
-SAVED_MODEL_PATH = "../../server/flask/model.h5"
+SAVED_MODEL_PATH = "model.keras" # Changed from "model.h5" to "model.keras" to reflect the new Keras format
 EPOCHS = 40
 BATCH_SIZE = 32
 PATIENCE = 5
@@ -59,7 +59,7 @@ def prepare_dataset(data_path, test_size=0.2, validation_size=0.2):
     return X_train, y_train, X_validation, y_validation, X_test, y_test
 
 
-def build_model(input_shape, loss="sparse_categorical_crossentropy", learning_rate=0.0001):
+def build_model(input_shape, num_classes, loss="sparse_categorical_crossentropy", learning_rate=0.0001):
     """Build neural network using keras.
 
     :param input_shape (tuple): Shape of array representing a sample train. E.g.: (44, 13, 1)
@@ -72,8 +72,11 @@ def build_model(input_shape, loss="sparse_categorical_crossentropy", learning_ra
     # build network architecture using convolutional layers
     model = tf.keras.models.Sequential()
 
+    # It is preferred to use an Input object as the first layer.
+    model.add(tf.keras.layers.Input(shape=input_shape))
+
     # 1st conv layer
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu', input_shape=input_shape,
+    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu',
                                      kernel_regularizer=tf.keras.regularizers.l2(0.001)))
     model.add(tf.keras.layers.BatchNormalization())
     model.add(tf.keras.layers.MaxPooling2D((3, 3), strides=(2,2), padding='same'))
@@ -93,10 +96,10 @@ def build_model(input_shape, loss="sparse_categorical_crossentropy", learning_ra
     # flatten output and feed into dense layer
     model.add(tf.keras.layers.Flatten())
     model.add(tf.keras.layers.Dense(64, activation='relu'))
-    tf.keras.layers.Dropout(0.3)
+    model.add(tf.keras.layers.Dropout(0.3))
 
     # softmax output layer
-    model.add(tf.keras.layers.Dense(10, activation='softmax'))
+    model.add(tf.keras.layers.Dense(num_classes, activation='softmax'))
 
     optimiser = tf.optimizers.Adam(learning_rate=learning_rate)
 
@@ -170,7 +173,8 @@ def main():
 
     # create network
     input_shape = (X_train.shape[1], X_train.shape[2], 1)
-    model = build_model(input_shape, learning_rate=LEARNING_RATE)
+    num_classes = len(np.unique(y_train))
+    model = build_model(input_shape, num_classes=num_classes, learning_rate=LEARNING_RATE)
 
     # train network
     history = train(model, EPOCHS, BATCH_SIZE, PATIENCE, X_train, y_train, X_validation, y_validation)
