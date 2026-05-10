@@ -14,16 +14,10 @@ class _Keyword_Spotting_Service:
 
     model = None
     _mapping = [
-        "down",
-        "off",
-        "on",
-        "no",
-        "yes",
-        "stop",
-        "up",
         "right",
         "left",
-        "go"
+        "up",
+        "down"
     ]
     _instance = None
 
