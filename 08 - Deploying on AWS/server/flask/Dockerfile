@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y libsndfile1 libasound-dev portaudio19-d
 
 # Install python packages
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --ignore-installed blinker -r requirements.txt
 
 # Start uWSGI using config file
 CMD ["uwsgi", "app.ini"]

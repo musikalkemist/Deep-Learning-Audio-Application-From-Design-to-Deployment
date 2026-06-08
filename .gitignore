@@ -157,3 +157,4 @@ speech_commands_v2_extracted
 *.json
 **/data.json
 *.h5
+**/*.pem
