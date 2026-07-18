@@ -134,8 +134,27 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# OS files
+Thumbs.db
+.directory
+.DS_Store
+**/.DS_Store
+**/**/.DS_Store
+
 # pytype static type analyzer
 .pytype/
 
 # Cython debug symbols
 cython_debug/
+
+# Dataset/Models files
+Speech_Commands_dataset/
+speech_commands_v2_extracted
+**/speech_commands_v2_extracted
+**/**/speech_commands_v2_extracted
+/data
+*.gz
+*.json
+**/data.json
+*.h5
+**/*.pem

@@ -1,0 +1,14 @@
+Flask
+librosa
+numpy<2.0.0
+scipy
+scikit-learn
+SoundFile
+uWSGI
+requests
+matplotlib
+numba
+resampy
+joblib
+audioread
+keras>=3.3.3
