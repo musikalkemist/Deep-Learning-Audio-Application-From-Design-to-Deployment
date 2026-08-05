@@ -62,7 +62,7 @@ termcolor==3.3.0
 tf_keras==2.16.0
 threadpoolctl==3.6.0
 typing_extensions==4.15.0
-urllib3==2.6.3
+urllib3==2.7.0
 uWSGI==2.0.31
 Werkzeug==3.1.6
 wrapt==2.1.2
